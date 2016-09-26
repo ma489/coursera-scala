@@ -65,7 +65,7 @@ abstract class TweetSet {
    * Question: Should we implment this method here, or should it remain abstract
    * and be implemented in the subclasses?
    */
-    def mostRetweeted: Tweet = ???
+    def mostRetweeted: Tweet
   
   /**
    * Returns a list containing all tweets of this set, sorted by retweet count
@@ -76,7 +76,7 @@ abstract class TweetSet {
    * Question: Should we implment this method here, or should it remain abstract
    * and be implemented in the subclasses?
    */
-    def descendingByRetweet: TweetList = ???
+    def descendingByRetweet: TweetList
   
   /**
    * The following methods are already implemented
@@ -125,6 +125,10 @@ class Empty extends TweetSet {
   def foreach(f: Tweet => Unit): Unit = ()
 
   def union(that: TweetSet): TweetSet = that
+
+  def mostRetweeted: Tweet = throw new NoSuchElementException
+
+  def descendingByRetweet: TweetList = Nil
 }
 
 class NonEmpty(elem: Tweet, left: TweetSet, right: TweetSet) extends TweetSet {
@@ -166,6 +170,40 @@ class NonEmpty(elem: Tweet, left: TweetSet, right: TweetSet) extends TweetSet {
   }
 
   def union(that: TweetSet): TweetSet = right.union(left.union(that.incl(elem)))
+
+  def mostRetweeted: Tweet = {
+    left match {
+      case _ : Empty => right match {
+        case _ : Empty => elem
+        case _ : NonEmpty =>
+          val rmrt = right.mostRetweeted
+          if (elem.retweets > rmrt.retweets) elem else rmrt
+      }
+      case l : NonEmpty => right match {
+        case _ : Empty =>
+          val lmrt = left.mostRetweeted
+          if (elem.retweets > lmrt.retweets) elem else lmrt
+        case _ : NonEmpty =>
+          val lmrt = left.mostRetweeted
+          val rmrt = right.mostRetweeted
+          if (elem.retweets >= lmrt.retweets && elem.retweets >= rmrt.retweets) {
+            elem
+          } else if (lmrt.retweets >= elem.retweets && lmrt.retweets >= rmrt.retweets) {
+            lmrt
+          } else if (rmrt.retweets >= elem.retweets && rmrt.retweets >= lmrt.retweets) {
+            rmrt
+          } else {
+            throw new NoSuchElementException
+          }
+      }
+    }
+  }
+
+  def descendingByRetweet: TweetList = {
+    val mrt = mostRetweeted
+    val newSet = remove(mrt)
+    new Cons(mrt, newSet.descendingByRetweet)
+  }
 }
 
 trait TweetList {
