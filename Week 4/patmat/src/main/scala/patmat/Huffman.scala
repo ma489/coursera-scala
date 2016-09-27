@@ -187,17 +187,20 @@ object Huffman {
    * the resulting list of characters.
    */
     def decode(tree: CodeTree, bits: List[Bit]): List[Char] = {
-      if (bits.isEmpty) {
-        tree match {
-          case t : Leaf => List(t.char)
-          case t : Fork => t.chars
-        }
-      } else {
-        tree match {
-          case t : Leaf => List(t.char)
-          case t : Fork => if (bits.head == 1) decode(t.right, bits.tail) else decode(t.left, bits.tail)
+      def aux(root: CodeTree, tree: CodeTree, bits: List[Bit]): List[Char] = {
+        if (bits.isEmpty) {
+          tree match {
+            case t : Leaf => List(t.char)
+            case t : Fork => t.chars
+          }
+        } else {
+          tree match {
+            case t : Leaf => t.char :: aux(root, root, bits)
+            case t : Fork => if (bits.head == 1) aux(root, t.right, bits.tail) else aux(root, t.left, bits.tail)
+          }
         }
       }
+      aux(tree, tree, bits)
     }
   
   /**
@@ -218,6 +221,9 @@ object Huffman {
    */
     def decodedSecret: List[Char] = decode(frenchCode, secret)
 
+//  def main(args: Array[String]) : Unit = {
+//    println(decodedSecret.mkString)
+//  }
 
   // Part 4a: Encoding using Huffman tree
 
@@ -225,7 +231,22 @@ object Huffman {
    * This function encodes `text` using the code tree `tree`
    * into a sequence of bits.
    */
-    def encode(tree: CodeTree)(text: List[Char]): List[Bit] = ???
+    def encode(tree: CodeTree)(text: List[Char]): List[Bit] = {
+      def traverse(tree: CodeTree, c: Char, bits: List[Bit]): List[Bit] = {
+        tree match {
+          case l: Leaf => if (l.char == c) bits else throw new NoSuchElementException
+          case f: Fork => {
+            (f.left, f.right) match {
+              case (l: Leaf, r: Leaf) => if (l.char == c) bits :+ 0 else traverse(r, c, bits :+ 1)
+              case (l : Fork, r: Leaf) => if (r.char == c) bits :+ 1 else traverse(l, c, bits :+ 0)
+              case (l : Leaf, r: Fork) => if (l.char == c) bits :+ 0 else traverse(r, c, bits :+ 1)
+              case (l : Fork, r: Fork) => if (l.chars.contains(c)) traverse(l, c, bits :+ 0) else traverse(r, c, bits :+ 1)
+            }
+          }
+        }
+      }
+      text.flatMap(c => traverse(tree, c, List()))
+    }
   
   // Part 4b: Encoding using code table
 
