@@ -256,8 +256,8 @@ object Huffman {
    * This function returns the bit sequence that represents the character `char` in
    * the code table `table`.
    */
-    def codeBits(table: CodeTable)(char: Char): List[Bit] = ???
-  
+    def codeBits(table: CodeTable)(char: Char): List[Bit] = table.find(e => e._1 == char).get._2
+
   /**
    * Given a code tree, create a code table which contains, for every character in the
    * code tree, the sequence of bits representing that character.
@@ -266,14 +266,19 @@ object Huffman {
    * a valid code tree that can be represented as a code table. Using the code tables of the
    * sub-trees, think of how to build the code table for the entire tree.
    */
-    def convert(tree: CodeTree): CodeTable = ???
+    def convert(tree: CodeTree): CodeTable = {
+      tree match {
+        case l : Leaf => List((l.char, List(0)))
+        case f : Fork => f.chars.map(c => (c, encode(tree)(List(c))))
+      }
+    }
   
   /**
    * This function takes two code tables and merges them into one. Depending on how you
    * use it in the `convert` method above, this merge method might also do some transformations
    * on the two parameter code tables.
    */
-    def mergeCodeTables(a: CodeTable, b: CodeTable): CodeTable = ???
+//    def mergeCodeTables(a: CodeTable, b: CodeTable): CodeTable = ???
   
   /**
    * This function encodes `text` according to the code tree `tree`.
@@ -281,5 +286,8 @@ object Huffman {
    * To speed up the encoding process, it first converts the code tree to a code table
    * and then uses it to perform the actual encoding.
    */
-    def quickEncode(tree: CodeTree)(text: List[Char]): List[Bit] = ???
+    def quickEncode(tree: CodeTree)(text: List[Char]): List[Bit] = {
+      val table = convert(tree)
+      text.flatMap(c => codeBits(table)(c))
+    }
   }
